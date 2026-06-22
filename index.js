@@ -2,11 +2,12 @@ const express = require('express');
 const { Pool } = require('pg');
 const app = express();
 
-// Render inyecta la variable de entorno DATABASE_URL automáticamente
+// Usamos la variable que pusiste en Render
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  // Neon requiere ssl: true para conexiones seguras
   ssl: {
-    rejectUnauthorized: false // Necesario para la mayoría de servicios en la nube
+    rejectUnauthorized: false
   }
 });
 
@@ -16,17 +17,15 @@ app.get('/:slug', async (req, res) => {
     const result = await pool.query('SELECT destination FROM redirects WHERE slug = $1', [slug]);
     
     if (result.rows.length > 0) {
-      // Redirección exitosa
       res.redirect(result.rows[0].destination);
     } else {
       res.status(404).send('Enlace no encontrado');
     }
   } catch (err) {
-    console.error('Error en DB:', err);
-    res.status(500).send('Error de servidor');
+    console.error('Error de conexión:', err);
+    res.status(500).send('Error en el servidor: ' + err.message);
   }
 });
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Servidor activo en puerto ${port}`));
-
